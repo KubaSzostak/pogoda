@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Pogoda</title>
+    <meta charset="utf-8" />
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="author" content="Kuba Szostak" />
+    <meta name="screenshot" content="screenshot.jpg" />
+
+    <!-- Add references to the Azure Maps Map control JavaScript and CSS files. -->
+    <link href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.css" rel="stylesheet" />
+    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/2/atlas.min.js"></script>
+    
+    <link rel="stylesheet" href="https://samples.azuremaps.com/lib/azure-maps-layer-legend.min.css" type="text/css" />
+    <script src="https://samples.azuremaps.com/lib/azure-maps-layer-legend.min.js"></script>
+    
+    <style>
+        .legend-icon {
+            font-size:22px; 
+            vertical-align: text-bottom;
+            opacity: 0.5;
+        }
+        </style>
+
+    <script>
+        var map, tileLayer;
+
+        var weatherTileUrl = 'https://{azMapsDomain}/map/tile?api-version=2.0&tilesetId={layerName}&zoom={z}&x={x}&y={y}';
+
+        function GetMap() {
+            //Initialize a map instance.
+            map = new atlas.Map('myMap', {
+                center: [22.076, 51.19],
+                zoom: 9,
+                view: 'Auto',
+                style: 'road', // grayscale_dark
+
+                //Add authentication details for connecting to Azure Maps.
+                authOptions: {
+                    //Use Azure Active Directory authentication.
+                    // authType: 'anonymous',
+                    // clientId: 'e6b6ab59-eb5d-4d25-aa57-581135b927f0', //Your Azure Maps client id for accessing your Azure Maps account.
+                    // getToken: function (resolve, reject, map) {
+                    //     //URL to your authentication service that retrieves an Azure Active Directory Token.
+                    //     var tokenServiceUrl = "https://samples.azuremaps.com/api/GetAzureMapsToken";
+
+                    //     fetch(tokenServiceUrl).then(r => r.text()).then(token => resolve(token));
+                    // }
+
+                    //Alternatively, use an Azure Maps key. Get an Azure Maps key at https://azure.com/maps. NOTE: The primary key should be used as the key.
+                    authType: 'subscriptionKey',
+                    subscriptionKey: 'bBXJDzGsuoOU0N8bfUg82sQ3ilUoVSyZV1V838VNVtY'
+                }
+            });
+
+            //Wait until the map resources are ready.
+            map.events.add('ready', function () {
+                //Create a style control and add it to the map.
+                map.controls.add(new atlas.control.StyleControl({
+                    mapStyles: 'all'
+                }), {
+                    position: 'top-right'
+                });
+                
+                map.controls.add(new atlas.control.ZoomControl(), {
+                    position: 'bottom-right'
+                });
+                
+                
+                //Add the custom control to the map.
+                legend = new atlas.control.LegendControl({
+                    //Global title to display for the legend.
+                    title: 'Legenda',
+
+                    //How the legend control should layout multiple legend cards. Options: 'list' | 'carousel' | 'accordion'
+                   // layout: 'accordion',
+                    
+                    //container: 'outsidePanel',
+                    
+                    //All legend cards to display within the legend control.
+                    legends: [
+                        {
+                            subtitle: 'Radar',
+                            type: 'html',
+                            html: ''
+                                + '<span class="legend-icon" style="color:#93c701">▬&nbsp;</span> Niewielkie opady deszczu <br/>'
+                                + '<span class="legend-icon" style="color:#ffd701;">▬&nbsp;</span> Opady deszczu <br/>'
+                                + '<span class="legend-icon" style="color:#f05514;">▬&nbsp;</span> Intensywne opady deszczu <br/>'
+                                + '<span class="legend-icon" style="color:#dc250e;">▬&nbsp;</span> Burza <br/>'
+                                
+                                + '<span class="legend-icon" style="color:#9ec8f2;">▬&nbsp;</span> Niewielkie opady śniegu <br/>'
+                                + '<span class="legend-icon" style="color:#2a8fdb;">▬&nbsp;</span> Opady śniegu <br/>'
+                                + '<span class="legend-icon" style="color:#020096;">▬&nbsp;</span> Intensywne opady śniegu <br/>'
+                                
+                                + '<span class="legend-icon" style="color:#c196e6;">▬&nbsp;</span> Niewielkie opady deszczu i śniegu <br/>'
+                                + '<span class="legend-icon" style="color:#ae6ee6;">▬&nbsp;</span> Opady deszczu i śniegu <br/>'
+                                + '<span class="legend-icon" style="color:#6500ba;">▬&nbsp;</span> Intensywne opady deszczu i śniegu <br/>'
+                        },
+                        
+                    ],
+                });
+
+                //Add the legend control to the map.
+                map.controls.add(legend, {
+                    position: 'bottom-left'
+                });                
+
+                //Optionally add events to the legend control to know when the focused legend card changes.
+                map.events.add('legendfocused', legend, function(e){
+                    console.log('legendfocused ' + e.legendIdx);
+                });
+
+                map.events.add('toggled', legend, function(e){
+                    console.log('Minified ' + e.minimized);
+                });
+                
+                
+                
+                
+                
+
+                //Initialize the weather tile layer.
+                updateTileLayer();
+            });
+        }
+
+        function updateTileLayer() {
+            var layerName = document.getElementById("layerSelector").value;
+
+            var tileUrl = weatherTileUrl.replace('{layerName}', layerName);
+
+            if (!tileLayer) {
+                //Create a tile layer and add it to the map below the label layer.
+                tileLayer = new atlas.layer.TileLayer({
+                    tileUrl: tileUrl,
+                    opacity: 0.5,
+                    tileSize: 256
+                });
+
+                map.layers.add(tileLayer, 'labels');
+            } else {
+                tileLayer.setOptions({
+                    tileUrl: tileUrl
+                });
+            }
+        }
+    </script>
+</head>
+<body onload="GetMap()" style="margin: 0; padding: 0;">
+    <div id="myMap" style="position:relative;width:100%;height:100vh;min-height: 100px;"></div>
+
+    <div style="position:absolute;top:10px;left:10px;padding:10px;background-color:transparent;border-radius:10px;">
+        <select id="layerSelector" onchange="updateTileLayer()" style="font-size: 18px">
+            <option value="microsoft.weather.radar.main" selected="selected">Radar</option>
+            <option value="microsoft.weather.infrared.main">Infrared</option>
+        </select>
+    </div>
+</body>
+</html>
